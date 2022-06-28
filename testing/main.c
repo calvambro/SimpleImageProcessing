@@ -48,7 +48,10 @@ typedef struct COLOR
 typedef struct metadata{  
    HEADER bmp_header;
    INFO_HEADER bmp_info_header;
+   char fileName[100];
 }METADATA;
+
+METADATA metadata[1000];
 
 #pragma pack(pop)
 
@@ -59,7 +62,7 @@ int to_file (unsigned char *out_buffer , HEADER header , INFO_HEADER info_header
 void get_color_pallet (COLOR_PALLET *bgr_pallete);
 char* get_file_name ();
 int xscanf ();
-METADATA get_header(int size, char *filename);
+int get_header(int size, char *filename);
 
 int main ()
 {
@@ -70,7 +73,7 @@ int main ()
    char content[100000];
    int size = 0;
    char *filename;
-   METADATA arr[1550];
+   // METADATA arr[1550];
 
 
    d = opendir("E:/Kuliah/Semester 2/Simple Image Processing/testing");
@@ -81,27 +84,32 @@ int main ()
       
       fptr = fopen(dir->d_name, "r+");
       printf("%s\n", dir->d_name);
-         // arr[size] = get_header(size, dir->d_name);
+      if (fptr != NULL){
+         printf("%s\n", dir->d_name);
+
+         // arr[size] = 
+         size = get_header(size, dir->d_name);
          // size++;
-         fclose(fptr);
-      // if (fptr != NULL){
-      //    printf("1%s\n", dir->d_name);
-
          
-      //    // scanf("%[^\n]", dir->d_name);
-      //    // filename = get_file_name;
+         // scanf("%[^\n]", dir->d_name);
+         // filename = get_file_name;
 
-      //    // ch = fgetc(fptr);
-      //    // while (ch != EOF)
-      //    // {
-      //    //    printf ("%c", ch);
-      //    //    ch = fgetc(fptr);
-      //    // }
-      //    // printf("\n\n");
-      // }
+         // ch = fgetc(fptr);
+         // while (ch != EOF)
+         // {
+         //    printf ("%c", ch);
+         //    ch = fgetc(fptr);
+         // }
+         // printf("\n\n");
+         fclose(fptr);
+      }
    
       }
       closedir(d);
+   }
+
+   for(int i = 1; i<=size; i++){
+      print_header(metadata[i]);
    }
 
    // int size = 0;
@@ -170,21 +178,22 @@ prints the header information
 */
 void print_header(METADATA metadata )
 {
-   printf("\n\n\n\nsignature\t\t%02x\n", metadata.bmp_header.signature);
+   printf("\n\nfilename\t\t%s\n", metadata.fileName);
+   printf("signature\t\t%02x\n", metadata.bmp_header.signature);
    printf("size of bmp\t\t%d\n", metadata.bmp_header.bmp_file_size);
-   printf("offset\t\t%d\n",metadata.bmp_header.offset );
+   printf("offset\t\t\t%d\n",metadata.bmp_header.offset );
 
    printf("header size\t\t%d\n", metadata.bmp_info_header.info_header_size);
    printf("image_width\t\t%d\n",metadata.bmp_info_header.image_width );
    printf("image_height\t\t%d\n", metadata.bmp_info_header.image_height);
    printf("no_of_planes\t\t%d\n", metadata.bmp_info_header.no_of_planes);
    printf("bits_per_pixel\t\t%d\n", metadata.bmp_info_header.bits_per_pixel );
-   printf("compression_type\t\t%d\n",metadata.bmp_info_header.compression_type );
+   printf("compression_type\t%d\n",metadata.bmp_info_header.compression_type );
    printf("size of image\t\t%d\n", metadata.bmp_info_header.image_data_size);
-   printf("horizontal_resolution\t\t%d\n", metadata.bmp_info_header.horizontal_resolution );
-   printf("vertical_resolution\t\t%d\n", metadata.bmp_info_header.vertical_resolution);
+   printf("horizontal_resolution\t%d\n", metadata.bmp_info_header.horizontal_resolution );
+   printf("vertical_resolution\t%d\n", metadata.bmp_info_header.vertical_resolution);
    printf("no_of_colors\t\t%d\n",metadata.bmp_info_header.no_of_colors );
-   printf("no_of_imp_colors\t\t%d\n", metadata.bmp_info_header.no_of_imp_colors);
+   printf("no_of_imp_colors\t%d\n", metadata.bmp_info_header.no_of_imp_colors);
 
 }
 
@@ -278,41 +287,43 @@ void get_color_pallet (COLOR_PALLET *bgr_pallete)
    }
 }
 
-struct metadata get_header(int size, char *file_name){
+int get_header(int size, char *file_name){
    // getchar();
+   // size++;
    int file_size = 10 , padding = 0;
-   METADATA metadata;
-   HEADER bmp_header;
-   INFO_HEADER bmp_info_header;
+   METADATA tempMetadata;
+   // HEADER bmp_header;
+   // INFO_HEADER bmp_info_header;
    COLOR_PALLET *bgr_pallete = malloc (sizeof( COLOR_PALLET ) * CHAR_RANGE);
    unsigned char *data_buffer , *out_buffer ;
+   strcpy(tempMetadata.fileName, file_name);
    // char *file_name ;
    FILE *in_file = NULL;
 
    // file_name = get_file_name ();
    // scanf("%s", file_name);
-   printf("%s", file_name);
+   printf("%s read\n", file_name);
    in_file =  fopen ( file_name , "rb" );
    if (in_file == NULL)
    {
       printf("file opening failed\n");
-      // return 1;
+      return size;
    }
 
-   if ( fread ( &metadata.bmp_header , sizeof ( HEADER ) , 1 , in_file) < 1 )
+   if ( fread ( &tempMetadata.bmp_header , sizeof ( HEADER ) , 1 , in_file) < 1 )
    {
       printf("Some issue in reading file\n");
-      // return 0;
+      return size;
    }
 
-   if ( fread ( &metadata.bmp_info_header , sizeof ( INFO_HEADER ) , 1 , in_file) < 1 )
+   if ( fread ( &tempMetadata.bmp_info_header , sizeof ( INFO_HEADER ) , 1 , in_file) < 1 )
    {
       printf("Some issue in reading file\n");
-      // return 1;
+      return size;
    }
-   print_header( metadata );
+   // print_header( metadata );
    //checking if the image is bmp or not
-   if ( metadata.bmp_header.signature != BMP_SIGNATURE )
+   if ( tempMetadata.bmp_header.signature != BMP_SIGNATURE )
    {
       printf("no a bmp\n");
       // return 1;
@@ -324,19 +335,19 @@ struct metadata get_header(int size, char *file_name){
    //    // return 1;
    // }
 
-   if ( fseek ( in_file , metadata.bmp_header.offset , SEEK_SET ) == -1 )
+   if ( fseek ( in_file , tempMetadata.bmp_header.offset , SEEK_SET ) == -1 )
    {
       printf("file operation failed\n");
       // return 1;
    }
 
-   file_size = metadata.bmp_info_header.image_data_size ;
+   file_size = tempMetadata.bmp_info_header.image_data_size ;
    //based on file_size allocate memory
    data_buffer = malloc (sizeof (char) * file_size + 1 );
    if (data_buffer == NULL)
    {
      printf("malloc Failed\n");
-   //   return 1;
+     return size;
    }
    *(data_buffer  + file_size) = CHAR_NULL;
    //read the data into buffer
@@ -345,8 +356,10 @@ struct metadata get_header(int size, char *file_name){
      printf("Some issue in reading file\n");
      fclose (in_file);
      free (data_buffer);
-   //   return 1;
+     return size;
    }
-   printf("!");
-   return metadata;
+   // printf("!");
+   size++;
+   metadata[size] = tempMetadata;
+   return size;
 }
