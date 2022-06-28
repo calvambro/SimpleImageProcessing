@@ -1,1 +1,1 @@
-# SimpleImageProcessing
+# Simple Image Processing in C
