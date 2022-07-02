@@ -282,8 +282,8 @@ struct metadata get_header(int size, char *file_name){
    // getchar();
    int file_size = 10 , padding = 0;
    METADATA metadata;
-   HEADER bmp_header;
-   INFO_HEADER bmp_info_header;
+   // HEADER bmp_header;
+   // INFO_HEADER bmp_info_header;
    COLOR_PALLET *bgr_pallete = malloc (sizeof( COLOR_PALLET ) * CHAR_RANGE);
    unsigned char *data_buffer , *out_buffer ;
    // char *file_name ;
@@ -347,6 +347,6 @@ struct metadata get_header(int size, char *file_name){
      free (data_buffer);
    //   return 1;
    }
-   printf("!");
+   // printf("!");
    return metadata;
 }

@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <stdbool.h>
 
 #define HEADER_SIZE 54
 #define CHAR_NULL '\0'
@@ -37,14 +38,6 @@ typedef struct info_header
 
 }INFO_HEADER;
 
-typedef struct COLOR
-{
-   unsigned char   blue;
-   unsigned char   green;
-   unsigned char   red;
-   unsigned char   unused;
-}COLOR_PALLET;
-
 typedef struct metadata{  
    HEADER bmp_header;
    INFO_HEADER bmp_info_header;
@@ -55,27 +48,71 @@ METADATA metadata[1000];
 
 #pragma pack(pop)
 
+int parent(int curr){
+   return curr/2;
+}
 
-unsigned char* covert_to_mono ( unsigned char *data_buffer ,int file_size , INFO_HEADER bmp_info_header);
+void swap(METADATA *heap, int curr, int parent){
+   METADATA temp = heap[curr];
+   heap[curr] = heap[parent];
+   heap[parent] = temp;
+}
+
+bool isLeaf(int curr, int size){
+   if(curr > (size/2) && curr <= size){
+      return true;
+   } else{
+      return false;
+   }
+}
+
+int rightChildPos(int curr){
+   return curr*2+1;
+}
+
+int leftChildPos(int curr){
+   return curr*2;
+}
+
+void maxHeapify(METADATA *heap, int *size, int curr){
+   if(isLeaf(curr, *size) == true)return;
+   // printf("%d-", *size);
+
+   unsigned int rightChildSize = heap[rightChildPos(curr)].bmp_header.bmp_file_size ;
+   unsigned int leftChildSize = heap[leftChildPos(curr)].bmp_header.bmp_file_size;
+
+   if(heap[curr].bmp_header.bmp_file_size > rightChildSize || heap[curr].bmp_header.bmp_file_size > leftChildSize){
+      if(leftChildSize < rightChildSize){
+         swap(heap, curr, leftChildPos(curr));
+         maxHeapify(heap, size, leftChildPos(curr));
+      }else{
+         swap(heap, curr, rightChildPos(curr));
+         maxHeapify(heap, size, rightChildPos(curr));
+      }
+   }
+}
+
+METADATA extractMax(METADATA *heap, int *size){
+   // get max value or root
+   METADATA maxValue = heap[1];
+   heap[1] = heap[*size];
+   *size = *size-1;
+
+   maxHeapify(heap, size, 1);
+   return maxValue;
+}
+
 void print_header(METADATA metadata );
-int to_file (unsigned char *out_buffer , HEADER header , INFO_HEADER info_header , COLOR_PALLET *bgr_pallete , int file_size);
-void get_color_pallet (COLOR_PALLET *bgr_pallete);
-char* get_file_name ();
-int xscanf ();
-int get_header(int size, char *filename);
+int insertHeap(int size, char *filename);
 
 int main ()
 {
    DIR *d;
    struct dirent *dir;
    FILE *fptr;
-   char ch;
-   char content[100000];
    int size = 0;
-   char *filename;
-   // METADATA arr[1550];
 
-
+   // Read All bmp file in a folder
    d = opendir("E:/Kuliah/Semester 2/Simple Image Processing/testing");
    if (d)
    {
@@ -83,24 +120,8 @@ int main ()
       {
       
       fptr = fopen(dir->d_name, "r+");
-      printf("%s\n", dir->d_name);
       if (fptr != NULL){
-         printf("%s\n", dir->d_name);
-
-         // arr[size] = 
-         size = get_header(size, dir->d_name);
-         // size++;
-         
-         // scanf("%[^\n]", dir->d_name);
-         // filename = get_file_name;
-
-         // ch = fgetc(fptr);
-         // while (ch != EOF)
-         // {
-         //    printf ("%c", ch);
-         //    ch = fgetc(fptr);
-         // }
-         // printf("\n\n");
+         size = insertHeap(size, dir->d_name);
          fclose(fptr);
       }
    
@@ -112,66 +133,8 @@ int main ()
       print_header(metadata[i]);
    }
 
-   // int size = 0;
-   // char *filename;
-   // METADATA arr[1500];
-   
-   // scanf("%[^\n]", filename);
-   // // filename = get_file_name;
-   // arr[size] = get_header(size, filename);
-   printf("1");
    return 0;
 }
-/*
-this function makes the 3 byte rgb to 1 byte grey scale image
-*/
-unsigned char* covert_to_mono ( unsigned char *data_buffer , int file_size , INFO_HEADER bmp_info_header )
-{
-   int i = 0 , j = 0 , k = 0 , padding = 0 , count = 1;
-   padding = 4 - ( ( bmp_info_header.image_width * 3 ) % 4 );
-
-   unsigned char *converted_buffer = calloc ( (file_size/ BYTE_PER_PIXEL) + ( padding * bmp_info_header.image_height) , sizeof(char));
-   if (converted_buffer == NULL)
-   {
-      printf("malloc Failed\n");
-      return NULL;
-   }
-
-
-   if (padding == 4)
-   {
-      for ( i = 0 , j = 0 ; i <= file_size ; i += BYTE_PER_PIXEL , j ++)
-      {
-         *(converted_buffer + j) = ( *(data_buffer + i) *.20 ) +  (*(data_buffer + i + 1) * .70 ) +  (*(data_buffer + i + 2) * .10) ;
-         //*(converted_buffer + j) = ( *(data_buffer + i)  +  *(data_buffer + i + 1)  +  *(data_buffer + i + 2) ) / BYTE_PER_PIXEL  ;
-      }
-   }
-   else
-   {
-      printf("\n\n\nimage has padding\n");
-      *(converted_buffer ) = ( *(data_buffer ) *.20 ) +  (*(data_buffer + 1) * .70 ) +  (*(data_buffer + 2) * .10) ;
-
-      for ( i = BYTE_PER_PIXEL , j = 1 ; i < file_size ; i += BYTE_PER_PIXEL , j ++)
-      {
-         *(converted_buffer + j) = ( *(data_buffer + i) *.20 ) +  (*(data_buffer + i + 1) * .70 ) +  (*(data_buffer + i + 2) * .10) ;
-
-        if ( j %  ( bmp_info_header.image_width + padding ) == 0 )
-        {
-          for ( k = 1 ; k <= padding  ; k++ )
-          {
-             *(converted_buffer + j + k) =  *(data_buffer + i + 2 + k) ;
-          }
-
-          j += padding ;
-          i += padding ;
-        }
-
-      }
-   }
-
-   return converted_buffer ;
-}
-
 
 /*
 prints the header information
@@ -197,112 +160,14 @@ void print_header(METADATA metadata )
 
 }
 
-
-/*
-write compressed data to the file
-*/
-
-int to_file ( unsigned char *out_buffer , HEADER header , INFO_HEADER info_header , COLOR_PALLET * bgr_pallete , int file_size)
-{
-  FILE *file ;
-  file = fopen ( "mono.bmp" , "wb");
-  if (file == NULL)
-  {
-    printf("File creation failed\n" );
-    return 0;
-  }
-
-    printf("->%ld\n",ftell(file) );
-    fwrite ( &header , sizeof(HEADER) , 1 , file );
-    printf("->%ld\n",ftell(file) );
-    fwrite ( &info_header , sizeof(INFO_HEADER) , 1 , file );
-    printf("->%ld\n",ftell(file) );
-    fwrite ( bgr_pallete , sizeof(COLOR_PALLET) , CHAR_RANGE , file );
-    printf("->%ld\n",ftell(file) );
-    fwrite ( out_buffer , sizeof(char) , file_size , file );
-    printf("->%ld\n",ftell(file) );
-
-    fclose (file);
-    return 1;
-}
-
-/*
-returns char ponter with string in it
-*/
-char* get_file_name ()
-{
-   printf("Enter file_name size\n");
-   int file_name_size = xscanf ();
-
-   char *name_format = calloc ( sizeof(char) , 10 );
-   if ( name_format == NULL )
-   {
-      printf("malloc failed\n");
-      return 0;
-   }
-
-   char *file_name = calloc ( sizeof(char) , file_name_size);
-   if ( file_name == NULL )
-   {
-      printf("malloc failed\n");
-      return 0;
-   }
-
-
-   printf("Enter file_name : only the chars upto specifies length will be taken\n");
-   sprintf( name_format , "%c%ds" , '%',file_name_size + 1);
-   scanf( name_format , file_name );
-   while ( getchar() != '\n' );
-   strcpy(file_name, "sample.bmp");
-   printf("you entered :\t%s\n",file_name );
-
-   return file_name ;
-}
-
-/*
-return integer from input
-*/
-int xscanf ()
-{
-  int temp ;
-  while ( scanf("%d", &temp ) == 0 )
-  {
-    while (getchar() != '\n');
-    printf("\nEnter a integer \n");
-  }
-  return temp;
-}
-/*
-genrates the color pallete for the grey scale image
-*/
-
-void get_color_pallet (COLOR_PALLET *bgr_pallete)
-{
-   int i;
-   for ( i = 0; i < CHAR_RANGE; i++) {
-      ( bgr_pallete + i )->blue     = i ;
-      ( bgr_pallete + i )->green    = i ;
-      ( bgr_pallete + i )->red      = i ;
-      ( bgr_pallete + i )->unused   = CHAR_NULL;
-   }
-}
-
-int get_header(int size, char *file_name){
-   // getchar();
-   // size++;
-   int file_size = 10 , padding = 0;
+int insertHeap(int size, char *file_name){
+   long long unsigned int file_size = 10;
    METADATA tempMetadata;
-   // HEADER bmp_header;
-   // INFO_HEADER bmp_info_header;
-   COLOR_PALLET *bgr_pallete = malloc (sizeof( COLOR_PALLET ) * CHAR_RANGE);
-   unsigned char *data_buffer , *out_buffer ;
+   unsigned char *data_buffer;
    strcpy(tempMetadata.fileName, file_name);
-   // char *file_name ;
+
    FILE *in_file = NULL;
 
-   // file_name = get_file_name ();
-   // scanf("%s", file_name);
-   printf("%s read\n", file_name);
    in_file =  fopen ( file_name , "rb" );
    if (in_file == NULL)
    {
@@ -321,19 +186,12 @@ int get_header(int size, char *file_name){
       printf("Some issue in reading file\n");
       return size;
    }
-   // print_header( metadata );
+
    //checking if the image is bmp or not
    if ( tempMetadata.bmp_header.signature != BMP_SIGNATURE )
    {
-      printf("no a bmp\n");
-      // return 1;
+      printf("%s no a bmp\n", file_name);
    }
-
-   // if ( bmp_info_header.bits_per_pixel != RGB_SIZE )
-   // {
-   //    printf("already in greysacle\n");
-   //    // return 1;
-   // }
 
    if ( fseek ( in_file , tempMetadata.bmp_header.offset , SEEK_SET ) == -1 )
    {
@@ -359,7 +217,18 @@ int get_header(int size, char *file_name){
      return size;
    }
    // printf("!");
+
    size++;
    metadata[size] = tempMetadata;
+   // swapping
+   int curr = size;
+   while(metadata[curr].bmp_header.bmp_file_size < metadata[parent(curr)].bmp_header.bmp_file_size){
+      swap(metadata, curr, parent(curr));
+      curr = parent(curr);
+   }
+
+
+   // size++;
+   printf("%s read\n", file_name);
    return size;
 }
