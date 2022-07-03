@@ -45,6 +45,7 @@ typedef struct metadata{
 }METADATA;
 
 METADATA metadata[1000];
+int size = 0;
 
 #pragma pack(pop)
 
@@ -74,7 +75,7 @@ int leftChildPos(int curr){
    return curr*2;
 }
 
-void maxHeapify(METADATA *heap, int *size, int curr){
+void minHeapify(METADATA *heap, int *size, int curr){
    if(isLeaf(curr, *size) == true)return;
    // printf("%d-", *size);
 
@@ -84,33 +85,83 @@ void maxHeapify(METADATA *heap, int *size, int curr){
    if(heap[curr].bmp_header.bmp_file_size > rightChildSize || heap[curr].bmp_header.bmp_file_size > leftChildSize){
       if(leftChildSize < rightChildSize){
          swap(heap, curr, leftChildPos(curr));
-         maxHeapify(heap, size, leftChildPos(curr));
+         minHeapify(heap, size, leftChildPos(curr));
       }else{
          swap(heap, curr, rightChildPos(curr));
-         maxHeapify(heap, size, rightChildPos(curr));
+         minHeapify(heap, size, rightChildPos(curr));
       }
    }
 }
 
-METADATA extractMax(METADATA *heap, int *size){
+METADATA extractMin(METADATA *heap, int *size){
    // get max value or root
    METADATA maxValue = heap[1];
    heap[1] = heap[*size];
    *size = *size-1;
 
-   maxHeapify(heap, size, 1);
+   minHeapify(heap, size, 1);
    return maxValue;
 }
 
 void print_header(METADATA metadata );
 int insertHeap(int size, char *filename);
+void readAllBMP();
+void printAll();
 
 int main ()
 {
+   int choose;
+
+   while (true)
+   {
+      printf("\tWELCOME\n");
+      printf("==================================\n");
+      printf("1. Read All BMP file.\n");
+      printf("2. Get Smallest BMP file data.\n");
+      printf("3. Print All BMP data.\n");
+      printf("0. Exit.\n");
+      printf("Enter the number : ");
+      scanf("%d", &choose);
+      // getchar();
+
+      switch (choose)
+      {
+      case 1:
+         readAllBMP();
+         break;
+      case 2: ;
+         METADATA tempExtrack;
+         tempExtrack = extractMin(metadata, &size);
+         print_header(tempExtrack);
+         break;
+      case 3:
+         printAll();
+         break;
+      case 0:
+         exit(1);
+         break;
+      default:
+         break;
+      }
+   }
+   
+
+   readAllBMP();
+   printAll();
+
+   return 0;
+}
+
+void printAll(){
+   for(int i = 1; i<=size; i++){
+      print_header(metadata[i]);
+   }
+}
+
+void readAllBMP(){
    DIR *d;
    struct dirent *dir;
    FILE *fptr;
-   int size = 0;
 
    // Read All bmp file in a folder
    d = opendir("E:/Kuliah/Semester 2/Simple Image Processing/testing");
@@ -128,12 +179,6 @@ int main ()
       }
       closedir(d);
    }
-
-   for(int i = 1; i<=size; i++){
-      print_header(metadata[i]);
-   }
-
-   return 0;
 }
 
 /*
